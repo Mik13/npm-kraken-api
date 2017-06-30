@@ -1,6 +1,7 @@
 var request		= require('request');
 var crypto		= require('crypto');
 var querystring	= require('qs');
+var Bluebird = require('Bluebird');
 
 /**
  * KrakenClient connects to the Kraken.com API
@@ -30,10 +31,10 @@ function KrakenClient(key, secret, options) {
 
 	/**
 	 * This method makes a public or private API request.
-	 * @param  {String}   method   The API method (public or private)
-	 * @param  {Object}   params   Arguments to pass to the api call
-	 * @param  {Function} callback A callback function to be executed when the request is complete
-	 * @return {Object}            The request object
+	 * @param  {String}   method      The API method (public or private)
+	 * @param  {Object}   params      Arguments to pass to the api call
+	 * @param  {Function} [callback]  A callback function or falsy if you want to use promises
+	 * @return {Object}               The request object
 	 */
 	function api(method, params, callback) {
 		var methods = {
@@ -53,10 +54,10 @@ function KrakenClient(key, secret, options) {
 
 	/**
 	 * This method makes a public API request.
-	 * @param  {String}   method   The API method (public or private)
-	 * @param  {Object}   params   Arguments to pass to the api call
-	 * @param  {Function} callback A callback function to be executed when the request is complete
-	 * @return {Object}            The request object
+	 * @param  {String}   method      The public API method
+	 * @param  {Object}   params      Arguments to pass to the api call
+	 * @param  {Function} [callback]  A callback function or falsy if you want to use promises
+	 * @return {Object}               The request object
 	 */
 	function publicMethod(method, params, callback) {
 		params = params || {};
@@ -69,10 +70,10 @@ function KrakenClient(key, secret, options) {
 
 	/**
 	 * This method makes a private API request.
-	 * @param  {String}   method   The API method (public or private)
-	 * @param  {Object}   params   Arguments to pass to the api call
-	 * @param  {Function} callback A callback function to be executed when the request is complete
-	 * @return {Object}            The request object
+	 * @param  {String}   method      The private API method
+	 * @param  {Object}   params      Arguments to pass to the api call
+	 * @param  {Function} [callback]  A callback function or falsy if you want to use promises
+	 * @return {Object}               The request object
 	 */
 	function privateMethod(method, params, callback) {
 		params = params || {};
@@ -119,11 +120,11 @@ function KrakenClient(key, secret, options) {
 
 	/**
 	 * This method sends the actual HTTP request
-	 * @param  {String}   url      The URL to make the request
-	 * @param  {Object}   headers  Request headers
-	 * @param  {Object}   params   POST body
-	 * @param  {Function} callback A callback function to call when the request is complete
-	 * @return {Object}            The request object
+	 * @param  {String}   url         The URL to make the request
+	 * @param  {Object}   headers     Request headers
+	 * @param  {Object}   params      POST body
+	 * @param  {Function} [callback]  A callback function or falsy if you want to use promises
+	 * @return {Bluebird} Always resolves if callback is given!
 	 */
 	function rawRequest(url, headers, params, callback) {
 		// Set custom User-Agent string
@@ -137,42 +138,73 @@ function KrakenClient(key, secret, options) {
 			timeout: config.timeoutMS
 		};
 
-		var req = request.post(options, function(error, response, body) {
-			if (typeof callback === 'function') {
-				var data;
+		return new Bluebird(function (resolve, reject) {
+      request.post(options, function (error, response, body) {
+        if (typeof callback === 'function') {
+          var data;
 
-				if (error) {
-					return callback.call(self, new Error('Error in server response: ' + JSON.stringify(error)), null);
-				}
+          if (error) {
+            error = new Error('Error in server response: ' + JSON.stringify(error));
 
-				try {
-					data = JSON.parse(body);
-				}
-				catch (e) {
-					return callback.call(self, new Error('Could not understand response from server: ' + body), null);
-				}
-				//If any errors occured, Kraken will give back an array with error strings under
-				//the key "error". We should then propagate back the error message as a proper error.
-				if(data.error && Array.isArray(data.error)) {
-					var krakenError = null;
-					data.error.forEach(function(element) {
-						if (element.charAt(0) === "E") {
-							krakenError = element.substr(1);
-							return false;
-						}
-					});
-					if (krakenError) {
-						return callback.call(self, new Error('Kraken API returned error: ' + krakenError), null);
-					} else {
-						return callback.call(self, new Error('Kraken API returned an unknown error'), null);
-					}
-				}
-				else {
-					return callback.call(self, null, data);
-				}
-			}
-		});
-		return req;
+            if (callback) {
+              resolve();
+              return callback.call(self, error, null);
+            } else {
+              return reject(error);
+            }
+          }
+
+          try {
+            data = JSON.parse(body);
+          }
+          catch (e) {
+            error = new Error('Could not understand response from server: ' + body);
+
+            if (callback) {
+              resolve();
+              return callback.call(self, error, null);
+            } else {
+              return reject(error);
+            }
+          }
+          //If any errors occured, Kraken will give back an array with error strings under
+          //the key "error". We should then propagate back the error message as a proper error.
+          if (data.error && Array.isArray(data.error)) {
+            var krakenError = null;
+            data.error.forEach(function (element) {
+              if (element.charAt(0) === "E") {
+                krakenError = element.substr(1);
+                return false;
+              }
+            });
+            if (krakenError) {
+              error = new Error('Kraken API returned error: ' + krakenError);
+
+              if (callback) {
+                resolve();
+                return callback.call(self, error, null);
+              } else {
+                return reject(error);
+              }
+            } else {
+              error = new Error('Kraken API returned an unknown error: ' + JSON.stringify(data.error));
+
+              if (callback) {
+                resolve();
+                return callback.call(self, error, null);
+              } else {
+                return reject(error);
+              }
+            }
+          }
+          else {
+            resolve(data);
+
+            return callback.call(self, null, data);
+          }
+        }
+      });
+    });
 	}
 
 	self.api			= api;
