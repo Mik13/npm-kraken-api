@@ -6,18 +6,26 @@ var querystring	= require('querystring');
  * KrakenClient connects to the Kraken.com API
  * @param {String} key    API Key
  * @param {String} secret API Secret
- * @param {String} [otp]  Two-factor password (optional) (also, doesn't work)
+ * @param {String|Object} [options={}]  Additional options. If a string is passed, will default to just setting `options.otp`.
+ * @param {String} [options.otp] Two-factor password (optional) (also, doesn't work)
+ * @param {Number} [options.timeout] Maximum timeout (in milliseconds) for all API-calls (passed to `request`)
  */
-function KrakenClient(key, secret, otp, config = {}) {
+function KrakenClient(key, secret, options) {
 	var self = this;
+
+	// make sure to be backwards compatible
+	options = options || {};
+	if(typeof options === 'string') {
+		options = { otp: options };
+	}
 
 	var config = {
 		url: 'https://api.kraken.com',
-		version: config.version || '0',
+		version: options.version || '0',
 		key: key,
 		secret: secret,
-		otp: otp,
-		timeoutMS: config.timeout || 5000
+		otp: options.otp,
+		timeoutMS: options.timeout || 5000
 	};
 
 	/**
@@ -156,7 +164,7 @@ function KrakenClient(key, secret, otp, config = {}) {
 					if (krakenError) {
 						return callback.call(self, new Error('Kraken API returned error: ' + krakenError), null);
 					} else {
-						return callback.call(self, new Error('Kraken API returned an unknown error'), null);	
+						return callback.call(self, new Error('Kraken API returned an unknown error'), null);
 					}
 				}
 				else {
