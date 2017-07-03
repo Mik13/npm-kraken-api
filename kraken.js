@@ -1,4 +1,4 @@
-var request		= require('request');
+var request		= require('requestretry');
 var crypto		= require('crypto');
 var querystring	= require('qs');
 var Bluebird = require('Bluebird');
