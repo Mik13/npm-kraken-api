@@ -1,7 +1,7 @@
 var request		= require('requestretry');
 var crypto		= require('crypto');
 var querystring	= require('qs');
-var Bluebird = require('Bluebird');
+var Bluebird = require('bluebird');
 
 /**
  * KrakenClient connects to the Kraken.com API
