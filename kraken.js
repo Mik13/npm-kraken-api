@@ -32,6 +32,8 @@ module.exports = class KrakenClient {
 			otp: options.otp,
 			timeoutMS: options.timeout || 5000
 		};
+
+		this.api = this.api.bind(this);
 	}
 
 	/**
