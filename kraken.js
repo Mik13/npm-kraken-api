@@ -32,6 +32,8 @@ module.exports = class KrakenClient {
 			otp: options.otp,
 			timeoutMS: options.timeout || 5000
 		};
+
+		this.api = this.api.bind(this);
 	}
 
 	/**
@@ -112,14 +114,12 @@ module.exports = class KrakenClient {
 	 */
 	_getMessageSignature(path, request, nonce) {
 		const message = querystring.stringify(request);
-		const secret = new Buffer(config.secret, 'base64');
+		const secret = new Buffer(this._config.secret, 'base64');
 		const hash = new crypto.createHash('sha256');
 		const hmac = new crypto.createHmac('sha512', secret);
 
 		let hash_digest = hash.update(nonce + message).digest('binary');
-		hmac_digest = hmac.update(path + hash_digest, 'binary').digest('base64');
-
-		return hmac_digest;
+		return hmac.update(path + hash_digest, 'binary').digest('base64');
 	}
 
 	/**
