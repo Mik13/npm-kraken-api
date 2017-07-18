@@ -86,7 +86,7 @@ module.exports = class KrakenClient {
 		const url = `${config.url}${path}`;
 
 		if (!params.nonce) {
-			params.nonce = new Date() * 1000; // spoof microsecond
+			params.nonce = Date.now() * 1000; // spoof microsecond
 		}
 
 		if (config.otp !== undefined) {
