@@ -28,5 +28,8 @@
     "url": "https://github.com/nothingisdead/npm-kraken-api/issues",
     "email": "rbmyr8@gmail.com"
   },
-  "readmeFilename": "README.md"
+  "readmeFilename": "README.md",
+  "devDependencies": {
+    "eslint": "^4.2.0"
+  }
 }

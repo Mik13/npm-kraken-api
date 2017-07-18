@@ -178,7 +178,7 @@ module.exports = class KrakenClient {
 					let krakenError = null;
 
 					data.error.forEach(function (element) {
-						if (element.charAt(0) === "E") {
+						if (element.charAt(0) === 'E') {
 							krakenError = element.substr(1);
 							return false;
 						}
