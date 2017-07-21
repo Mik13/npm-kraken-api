@@ -1,4 +1,4 @@
-const request = require('requestretry');
+const request = require('request');
 const crypto = require('crypto');
 const querystring = require('qs');
 const Bluebird = require('bluebird');
