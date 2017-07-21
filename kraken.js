@@ -33,6 +33,8 @@ module.exports = class KrakenClient {
 			timeoutMS: options.timeout || 5000
 		};
 
+		this._lastNonce = Date.now() * 1000; // spoof microsecond
+
 		this.api = this.api.bind(this);
 	}
 
@@ -86,7 +88,17 @@ module.exports = class KrakenClient {
 		const url = `${config.url}${path}`;
 
 		if (!params.nonce) {
-			params.nonce = Date.now() * 1000; // spoof microsecond
+			let nonce = this._lastNonce;
+
+			if (nonce) {
+				nonce = nonce + 1;
+			} else {
+				//should never happen, since the constructor initializes the last nonce
+				nonce = Date.now() * 1000; // spoof microsecond
+			}
+
+			params.nonce = nonce;
+			this._lastNonce = nonce;
 		}
 
 		if (config.otp !== undefined) {
